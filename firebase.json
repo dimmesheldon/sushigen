@@ -1,1 +1,31 @@
-{"flutter":{"platforms":{"macos":{"default":{"projectId":"sushigen","appId":"1:259288693487:ios:65b92485156ca2521b391a","uploadDebugSymbols":false,"fileOutput":"macos/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"sushigen","configurations":{"macos":"1:259288693487:ios:65b92485156ca2521b391a","windows":"1:259288693487:web:eb4d1ef2b17736d61b391a"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "macos": {
+        "default": {
+          "projectId": "sushigen",
+          "appId": "1:259288693487:ios:65b92485156ca2521b391a",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "sushigen",
+          "configurations": {
+            "macos": "1:259288693487:ios:65b92485156ca2521b391a",
+            "windows": "1:259288693487:web:eb4d1ef2b17736d61b391a"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "website",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
