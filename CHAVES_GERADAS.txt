@@ -1,0 +1,91 @@
+════════════════════════════════════════════════════════════════
+          🍣 SUSHIGEN - CHAVES DE LICENÇA GERADAS 🍣
+════════════════════════════════════════════════════════════════
+
+📅 Data de Geração: 03/02/2026
+
+────────────────────────────────────────────────────────────────
+  🆓 LICENÇA TRIAL (30 dias)
+────────────────────────────────────────────────────────────────
+  Chave: 8288-EFEE-9D08-5AF5
+  
+  Dispositivos: 3
+  Ideal para: Demonstrações e testes
+
+
+────────────────────────────────────────────────────────────────
+  📅 LICENÇA MENSAL (30 dias)
+────────────────────────────────────────────────────────────────
+  Chave: A76C-4BAE-241D-E16F
+  
+  Dispositivos: 3
+  Ideal para: Assinatura mensal
+
+
+────────────────────────────────────────────────────────────────
+  📆 LICENÇA ANUAL (365 dias) ⭐ RECOMENDADA
+────────────────────────────────────────────────────────────────
+  Chave: 6319-35B3-FD24-1BC8
+  
+  Dispositivos: 5
+  Ideal para: Uso profissional
+
+
+────────────────────────────────────────────────────────────────
+  ♾️  LICENÇA VITALÍCIA (100 anos)
+────────────────────────────────────────────────────────────────
+  Chave: 1A56-0FD1-4814-E762
+  
+  Dispositivos: 10
+  Ideal para: Licença perpétua
+
+
+════════════════════════════════════════════════════════════════
+  📋 CREDENCIAIS DE TESTE PADRÃO
+════════════════════════════════════════════════════════════════
+
+  Para usar com o script setup_database.dart:
+  
+  👤 Usuário: admin
+  🔒 Senha: admin123
+  🔑 Licença: Use qualquer chave acima
+
+
+════════════════════════════════════════════════════════════════
+  🚀 COMANDOS RÁPIDOS
+════════════════════════════════════════════════════════════════
+
+  # Configurar banco com dados de exemplo
+  $ dart run scripts/setup_database.dart
+
+  # Gerar nova chave de licença
+  $ dart run scripts/generate_license.dart
+
+  # Executar aplicativo (macOS)
+  $ flutter run -d macos
+
+  # Executar aplicativo (Windows)
+  $ flutter run -d windows
+
+
+════════════════════════════════════════════════════════════════
+  ⚡ INÍCIO RÁPIDO
+════════════════════════════════════════════════════════════════
+
+  1. Execute: dart run scripts/setup_database.dart
+  2. Anote as credenciais exibidas no terminal
+  3. Execute: flutter run -d macos
+  4. Faça login com as credenciais
+  5. Comece a usar! 🍣
+
+
+════════════════════════════════════════════════════════════════
+  📖 DOCUMENTAÇÃO COMPLETA
+════════════════════════════════════════════════════════════════
+
+  • README.md - Guia completo do projeto
+  • LICENSES.md - Detalhes sobre licenciamento
+  • /scripts - Scripts auxiliares
+
+
+════════════════════════════════════════════════════════════════
