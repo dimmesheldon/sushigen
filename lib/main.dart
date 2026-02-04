@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/database/database_helper.dart';
+import 'core/update/widgets/update_checker.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/sales/presentation/screens/quick_sale_screen.dart';
 import 'features/auth/data/repositories/auth_repository.dart';
@@ -88,28 +89,30 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'SushiGen - Sistema de Gerenciamento',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
-        useMaterial3: true,
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.red.shade700,
-          foregroundColor: Colors.white,
-          elevation: 2,
+    return UpdateChecker(
+      child: MaterialApp(
+        title: 'SushiGen - Sistema de Gerenciamento',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
+          useMaterial3: true,
+          appBarTheme: AppBarTheme(
+            backgroundColor: Colors.red.shade700,
+            foregroundColor: Colors.white,
+            elevation: 2,
+          ),
         ),
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const LoginScreen(),
+          '/dashboard': (context) => const DashboardScreen(),
+          '/home': (context) => const QuickSaleScreen(),
+          '/license-renewal': (context) => const LicenseRenewalScreen(),
+          '/products': (context) => const ProductsListScreen(),
+          '/reports': (context) => const ReportsScreen(),
+          '/cashflow': (context) => const CashFlowScreen(),
+        },
       ),
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const LoginScreen(),
-        '/dashboard': (context) => const DashboardScreen(),
-        '/home': (context) => const QuickSaleScreen(),
-        '/license-renewal': (context) => const LicenseRenewalScreen(),
-        '/products': (context) => const ProductsListScreen(),
-        '/reports': (context) => const ReportsScreen(),
-        '/cashflow': (context) => const CashFlowScreen(),
-      },
     );
   }
 }
