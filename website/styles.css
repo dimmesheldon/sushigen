@@ -149,6 +149,16 @@ body {
     box-shadow: 0 10px 20px var(--shadow);
 }
 
+.btn-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
 .btn-secondary {
     background: transparent;
     color: var(--white);
