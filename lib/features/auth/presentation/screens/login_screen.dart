@@ -36,6 +36,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _onUsernameChanged() async {
     final username = _userIdController.text.trim();
+
+    // 🔥 SUPERADMIN não precisa de licença!
+    if (username.toLowerCase() == 'superadmin') {
+      setState(() {
+        _existingLicense = null; // Força a não mostrar campo de licença
+      });
+      return;
+    }
+
     if (username.isEmpty || username.length < 3) {
       setState(() {
         _existingLicense = null;
@@ -76,8 +85,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final password = _passwordController.text;
       final licenseKey = _licenseKeyController.text.trim();
 
+      // 🔥 SUPERADMIN não precisa de licença!
+      if (username.toLowerCase() == 'superadmin') {
+        await ref
+            .read(authProvider.notifier)
+            .login(username, password, ''); // Licença vazia para superadmin
+      }
       // Se já existe licença ativa, não precisa validar novamente
-      if (_existingLicense != null) {
+      else if (_existingLicense != null) {
         await ref
             .read(authProvider.notifier)
             .loginWithoutLicense(username, password);
@@ -147,6 +162,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final bool hasActiveLicense =
         _existingLicense != null && _existingLicense!.isValid;
+
+    // 🔥 Detectar se é superadmin
+    final bool isSuperAdmin =
+        _userIdController.text.trim().toLowerCase() == 'superadmin';
 
     return Scaffold(
       body: Container(
@@ -258,63 +277,103 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Campo Chave de Licença
-                      TextFormField(
-                        controller: _licenseKeyController,
-                        enabled: !hasActiveLicense,
-                        decoration: InputDecoration(
-                          labelText: 'Chave de Licença',
-                          prefixIcon: Icon(
-                            hasActiveLicense ? Icons.lock : Icons.vpn_key,
+                      // Campo Chave de Licença - ESCONDIDO PARA SUPERADMIN!
+                      if (!isSuperAdmin) ...[
+                        TextFormField(
+                          controller: _licenseKeyController,
+                          enabled: !hasActiveLicense,
+                          decoration: InputDecoration(
+                            labelText: 'Chave de Licença',
+                            prefixIcon: Icon(
+                              hasActiveLicense ? Icons.lock : Icons.vpn_key,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: hasActiveLicense,
+                            fillColor: hasActiveLicense
+                                ? Colors.grey.shade100
+                                : null,
                           ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: hasActiveLicense,
-                          fillColor: hasActiveLicense
-                              ? Colors.grey.shade100
-                              : null,
+                          validator: (value) {
+                            if (hasActiveLicense) return null;
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Digite a chave de licença';
+                            }
+                            return null;
+                          },
                         ),
-                        validator: (value) {
-                          if (hasActiveLicense) return null;
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Digite a chave de licença';
-                          }
-                          return null;
-                        },
-                      ),
 
-                      // Status da licença
-                      if (_existingLicense != null) ...[
+                        // Status da licença
+                        if (_existingLicense != null) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _getDaysRemainingColor().withAlpha(26),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _getDaysRemainingColor(),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  size: 16,
+                                  color: _getDaysRemainingColor(),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _getDaysRemainingText(),
+                                  style: TextStyle(
+                                    color: _getDaysRemainingColor(),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+
+                      // Badge para SUPERADMIN
+                      if (isSuperAdmin) ...[
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
+                            horizontal: 16,
+                            vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: _getDaysRemainingColor().withAlpha(26),
+                            color: Colors.purple.shade50,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: _getDaysRemainingColor(),
-                              width: 1,
+                              color: Colors.purple.shade700,
+                              width: 2,
                             ),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.info_outline,
-                                size: 16,
-                                color: _getDaysRemainingColor(),
+                                Icons.admin_panel_settings,
+                                color: Colors.purple.shade700,
+                                size: 24,
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 12),
                               Text(
-                                _getDaysRemainingText(),
+                                'Acesso Administrativo',
                                 style: TextStyle(
-                                  color: _getDaysRemainingColor(),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
+                                  color: Colors.purple.shade700,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
                                 ),
                               ),
                             ],

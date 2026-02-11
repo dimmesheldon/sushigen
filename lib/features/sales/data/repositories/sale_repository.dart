@@ -77,7 +77,6 @@ class SaleRepository {
     // Registrar no fluxo de caixa
     await db.insert('cash_flow', {
       'id': _uuid.v4(),
-      'user_id': userId,
       'type': 'income',
       'category': 'Venda',
       'amount': finalAmount,

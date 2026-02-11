@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../domain/entities/customer.dart';
 import '../providers/admin_provider.dart';
 import 'customers_screen.dart';
 import 'licenses_screen.dart';
+import 'admin_settings_screen.dart';
 
 class AdminDashboardScreen extends ConsumerWidget {
   const AdminDashboardScreen({super.key});
@@ -12,6 +14,7 @@ class AdminDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statisticsAsync = ref.watch(adminStatisticsProvider);
     final licensesState = ref.watch(licensesProvider);
+    final customersState = ref.watch(customersProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -19,6 +22,17 @@ class AdminDashboardScreen extends ConsumerWidget {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const AdminSettingsScreen(),
+                ),
+              );
+            },
+            tooltip: 'Configurações',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
@@ -79,7 +93,11 @@ class AdminDashboardScreen extends ConsumerWidget {
 
               // Licenças a Vencer
               if (licensesState.expiringSoon.isNotEmpty) ...[
-                _buildExpiringLicensesCard(context, licensesState),
+                _buildExpiringLicensesCard(
+                  context,
+                  licensesState,
+                  customersState,
+                ),
                 const SizedBox(height: 32),
               ],
 
@@ -204,7 +222,11 @@ class AdminDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildExpiringLicensesCard(BuildContext context, LicensesState state) {
+  Widget _buildExpiringLicensesCard(
+    BuildContext context,
+    LicensesState state,
+    CustomersState customersState,
+  ) {
     return Card(
       color: Colors.orange[50],
       child: Padding(
@@ -227,13 +249,25 @@ class AdminDashboardScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             ...state.expiringSoon.take(5).map((license) {
+              // Buscar cliente da licença
+              final customer = customersState.customers.firstWhere(
+                (c) => c.id == license.customerId,
+                orElse: () => Customer(
+                  id: '',
+                  name: 'Cliente Desconhecido',
+                  email: '',
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                ),
+              );
+
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
                   children: [
                     Expanded(
                       child: Text(
-                        license.username,
+                        customer.businessName ?? customer.name,
                         style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
                     ),
@@ -276,13 +310,15 @@ class AdminDashboardScreen extends ConsumerWidget {
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        GridView.count(
-          crossAxisCount: 2,
+        GridView(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childAspectRatio: 2,
+          ),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 2,
           children: [
             _buildActionCard(
               context: context,

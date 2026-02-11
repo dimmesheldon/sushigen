@@ -1,56 +1,109 @@
-# Correção: PDF Unicode e Botão Fluxo de Caixa
+# ✅ Correção: Erro ao Gerar PDF (PathNotFoundException)# Correção: PDF Unicode e Botão Fluxo de Caixa
 
-## Data: 03/02/2026
 
-## Problemas Corrigidos
 
-### ✅ 1. Erro ao Gerar PDF (Fontes Unicode)
+## 🐛 Problema Identificado## Data: 03/02/2026
 
-**Problema:** 
+
+
+### Erro ao Gerar PDF do Fluxo de Caixa## Problemas Corrigidos
+
 ```
+
+PathNotFoundException: Cannot open file, ### ✅ 1. Erro ao Gerar PDF (Fontes Unicode)
+
+path = '/Users/dimmesheldon/Library/Containers/com.sushigen.sushigen/Data/Downloads/fluxo_caixa_11_02_2026.pdf'
+
+(OS Error: No such file or directory, errno = 2)**Problema:** 
+
+``````
+
 Helvetica-Bold has no Unicode support
-```
+
+**Local do Erro**: Fluxo de Caixa → Botão PDF (ícone no topo)```
+
 A fonte Helvetica usada pelo `fontWeight: FontWeight.bold` não suporta caracteres especiais do português (á, ã, ç, etc.).
 
+## 🔍 Diagnóstico
+
 **Causa:**
-O PDF estava usando `pw.FontWeight.bold` que força o uso de Helvetica-Bold, uma fonte que não tem suporte a Unicode.
+
+### Causa RaizO PDF estava usando `pw.FontWeight.bold` que força o uso de Helvetica-Bold, uma fonte que não tem suporte a Unicode.
+
+O método `getDownloadsDirectory()` do `path_provider` **não funciona no macOS**.
 
 **Solução Aplicada:**
-1. Removidos todos os `fontWeight: pw.FontWeight.bold` do PDF
-2. Substituídos por `fontSize` (12 ou 14) que usa a fonte padrão com suporte Unicode
-3. Removida duplicação de código no cabeçalho (linhas 920-945)
-4. Adicionado `try-catch` para capturar erros
-5. Caracteres acentuados substituídos:
-   - "às" → "as"
-   - "Período" → "Periodo"
 
-**Arquivos Modificados:**
+```dart1. Removidos todos os `fontWeight: pw.FontWeight.bold` do PDF
+
+// CÓDIGO INCORRETO (antes)2. Substituídos por `fontSize` (12 ou 14) que usa a fonte padrão com suporte Unicode
+
+final directory = await getDownloadsDirectory();3. Removida duplicação de código no cabeçalho (linhas 920-945)
+
+// Retorna: .../Data/Downloads/ ❌ NÃO EXISTE4. Adicionado `try-catch` para capturar erros
+
+```5. Caracteres acentuados substituídos:
+
+   - "às" → "as"
+
+## 🛠️ Solução Implementada   - "Período" → "Periodo"
+
+
+
+### Novo Caminho: ~/Documents/SushiGen/PDFs/**Arquivos Modificados:**
+
 - `lib/features/cashflow/presentation/screens/cash_flow_screen.dart`
 
-**Código Corrigido:**
 ```dart
-// ANTES (causava erro)
-pw.Text('RECEITAS', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))
 
-// DEPOIS (funciona com acentos)
-pw.Text('RECEITAS', style: const pw.TextStyle(fontSize: 14))
-```
+if (Platform.isMacOS || Platform.isWindows) {**Código Corrigido:**
 
-### ✅ 2. Botão Fluxo de Caixa na Tela de Vendas
+  final appDocDir = await getApplicationDocumentsDirectory();```dart
 
-**Funcionalidade:** 
-Adicionado botão de acesso rápido ao Fluxo de Caixa no AppBar da tela de "Lançamento Rápido".
+  directory = Directory('${appDocDir.parent.parent.path}/Documents/SushiGen/PDFs');// ANTES (causava erro)
 
-**Localização:** 
+  if (!directory.existsSync()) {pw.Text('RECEITAS', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))
+
+    directory.createSync(recursive: true);
+
+  }// DEPOIS (funciona com acentos)
+
+}pw.Text('RECEITAS', style: const pw.TextStyle(fontSize: 14))
+
+``````
+
+
+
+## 📁 Localização dos PDFs### ✅ 2. Botão Fluxo de Caixa na Tela de Vendas
+
+
+
+**Antes**: `/Users/usuario/Library/Containers/.../Data/Downloads/` ❌  **Funcionalidade:** 
+
+**Depois**: `/Users/usuario/Documents/SushiGen/PDFs/` ✅Adicionado botão de acesso rápido ao Fluxo de Caixa no AppBar da tela de "Lançamento Rápido".
+
+
+
+## 🧪 Como Testar**Localização:** 
+
 AppBar da tela de vendas (quick_sale_screen.dart)
 
-**Implementação:**
-```dart
-IconButton(
+1. Fluxo de Caixa → Clique no ícone PDF
+
+2. Aguarde: "PDF gerado com sucesso!"**Implementação:**
+
+3. Clique: Botão "ABRIR"```dart
+
+4. Finder abre em `~/Documents/SushiGen/PDFs/`IconButton(
+
   icon: const Icon(Icons.account_balance_wallet),
-  onPressed: () {
+
+---  onPressed: () {
+
     Navigator.pushNamed(context, '/cashflow');
-  },
+
+**Status**: ✅ Correção completa - teste agora!  },
+
   tooltip: 'Fluxo de Caixa',
 ),
 ```

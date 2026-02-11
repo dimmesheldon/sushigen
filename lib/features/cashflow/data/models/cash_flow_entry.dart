@@ -6,7 +6,6 @@ class CashFlowEntry {
   final String description;
   final DateTime date;
   final String? saleId; // Se for de uma venda
-  final String userId;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool synced;
@@ -19,7 +18,6 @@ class CashFlowEntry {
     required this.description,
     required this.date,
     this.saleId,
-    required this.userId,
     required this.createdAt,
     required this.updatedAt,
     this.synced = false,
@@ -33,7 +31,6 @@ class CashFlowEntry {
     required String description,
     required DateTime date,
     String? saleId,
-    required String userId,
   }) {
     final now = DateTime.now();
     return CashFlowEntry(
@@ -44,7 +41,6 @@ class CashFlowEntry {
       description: description,
       date: date,
       saleId: saleId,
-      userId: userId,
       createdAt: now,
       updatedAt: now,
       synced: false,
@@ -61,7 +57,6 @@ class CashFlowEntry {
       'description': description,
       'date': date.toIso8601String(),
       'sale_id': saleId,
-      'user_id': userId,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'synced': synced ? 1 : 0,
@@ -78,7 +73,6 @@ class CashFlowEntry {
       description: map['description'] as String,
       date: DateTime.parse(map['date'] as String),
       saleId: map['sale_id'] as String?,
-      userId: map['user_id'] as String,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
       synced: (map['synced'] as int) == 1,
@@ -94,7 +88,6 @@ class CashFlowEntry {
     String? description,
     DateTime? date,
     String? saleId,
-    String? userId,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? synced,
@@ -107,7 +100,6 @@ class CashFlowEntry {
       description: description ?? this.description,
       date: date ?? this.date,
       saleId: saleId ?? this.saleId,
-      userId: userId ?? this.userId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       synced: synced ?? this.synced,

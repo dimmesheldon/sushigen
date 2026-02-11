@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/entities/customer.dart';
 import '../providers/admin_provider.dart';
+import 'company_users_screen.dart';
 import 'generate_license_screen.dart';
 
 class CustomersScreen extends ConsumerWidget {
@@ -133,6 +134,15 @@ class CustomersScreen extends ConsumerWidget {
               case 'edit':
                 _showCustomerDialog(context, ref, customer);
                 break;
+              case 'manage_users':
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        CompanyUsersScreen(customer: customer),
+                  ),
+                );
+                break;
               case 'generate_license':
                 Navigator.push(
                   context,
@@ -155,6 +165,16 @@ class CustomersScreen extends ConsumerWidget {
                   Icon(Icons.edit, size: 20),
                   SizedBox(width: 8),
                   Text('Editar'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'manage_users',
+              child: Row(
+                children: [
+                  Icon(Icons.manage_accounts, size: 20),
+                  SizedBox(width: 8),
+                  Text('Gerenciar Usuários'),
                 ],
               ),
             ),
@@ -302,7 +322,7 @@ class CustomersScreen extends ConsumerWidget {
                           ? isEditing
                                 ? 'Cliente atualizado com sucesso!'
                                 : 'Cliente cadastrado com sucesso!'
-                          : 'Erro ao salvar cliente',
+                          : 'Erro ao salvar cliente: ${ref.read(customersProvider).error ?? 'verifique os dados'}',
                     ),
                   ),
                 );

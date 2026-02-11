@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../sales/data/repositories/sale_repository.dart';
 import '../../../products/data/repositories/product_repository.dart';
 import '../../../../core/providers/sync_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -59,7 +60,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Consumer(
+          builder: (context, ref, child) {
+            final authState = ref.watch(authProvider);
+            final userName = authState.user?.username ?? '';
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Dashboard', style: TextStyle(fontSize: 20)),
+                if (userName.isNotEmpty)
+                  Text(
+                    userName,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
         backgroundColor: Colors.red.shade700,
         foregroundColor: Colors.white,
         actions: [
@@ -218,45 +239,51 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 1.4,
-                      children: [
-                        _buildActionCard(
-                          'Nova Venda',
-                          Icons.point_of_sale,
-                          Colors.red.shade700,
-                          () => Navigator.pushNamed(context, '/home'),
+                    // Limitar largura dos botões em telas grandes
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 700),
+                        child: GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: 3,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 1.1,
+                          children: [
+                            _buildActionCard(
+                              'Nova Venda',
+                              Icons.point_of_sale,
+                              Colors.red.shade700,
+                              () => Navigator.pushNamed(context, '/home'),
+                            ),
+                            _buildActionCard(
+                              'Produtos',
+                              Icons.restaurant_menu,
+                              Colors.blue.shade700,
+                              () => Navigator.pushNamed(context, '/products'),
+                            ),
+                            _buildActionCard(
+                              'Relatórios',
+                              Icons.assessment,
+                              Colors.green.shade700,
+                              () => Navigator.pushNamed(context, '/reports'),
+                            ),
+                            _buildActionCard(
+                              'Fluxo de Caixa',
+                              Icons.account_balance_wallet,
+                              Colors.purple.shade700,
+                              () => Navigator.pushNamed(context, '/cashflow'),
+                            ),
+                            _buildActionCard(
+                              'Configurações',
+                              Icons.settings,
+                              Colors.grey.shade700,
+                              () => _showSettingsMenu(context),
+                            ),
+                          ],
                         ),
-                        _buildActionCard(
-                          'Produtos',
-                          Icons.restaurant_menu,
-                          Colors.blue.shade700,
-                          () => Navigator.pushNamed(context, '/products'),
-                        ),
-                        _buildActionCard(
-                          'Relatórios',
-                          Icons.assessment,
-                          Colors.green.shade700,
-                          () => Navigator.pushNamed(context, '/reports'),
-                        ),
-                        _buildActionCard(
-                          'Fluxo de Caixa',
-                          Icons.account_balance_wallet,
-                          Colors.purple.shade700,
-                          () => Navigator.pushNamed(context, '/cashflow'),
-                        ),
-                        _buildActionCard(
-                          'Configurações',
-                          Icons.settings,
-                          Colors.grey.shade700,
-                          () => _showSettingsMenu(context),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
@@ -320,11 +347,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(10),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 36),
+              Icon(icon, color: color, size: 28),
               const SizedBox(height: 6),
               Text(
                 title,
@@ -393,6 +420,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/reports');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.account_balance_wallet),
+            title: const Text('Fluxo de Caixa'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/cashflow');
             },
           ),
           const Divider(),

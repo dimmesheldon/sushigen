@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../data/repositories/admin_repository.dart';
 import 'admin_dashboard_screen.dart';
 
 class AdminLoginScreen extends StatefulWidget {
@@ -11,12 +14,9 @@ class AdminLoginScreen extends StatefulWidget {
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _adminRepository = AdminRepository();
   bool _isLoading = false;
   String? _error;
-
-  // Credenciais hardcoded para admin (depois pode ser migrado para banco)
-  static const _adminUsername = 'superadmin';
-  static const _adminPassword = 'admin123';
 
   @override
   void dispose() {
@@ -31,24 +31,128 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       _error = null;
     });
 
-    // Simular delay de autenticação
-    await Future.delayed(const Duration(milliseconds: 500));
-
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
-    if (username == _adminUsername && password == _adminPassword) {
+    try {
+      final authenticated = await _adminRepository.authenticateAdmin(
+        username: username,
+        password: password,
+      );
+
+      if (!authenticated) {
+        throw Exception('Usuário ou senha inválidos');
+      }
+
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
         );
       }
-    } else {
+    } catch (e) {
       setState(() {
         _error = 'Usuário ou senha inválidos';
         _isLoading = false;
       });
     }
+  }
+
+  String? _encodeQueryParameters(Map<String, String> params) {
+    return params.entries
+        .map(
+          (e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
+        )
+        .join('&');
+  }
+
+  Future<void> _showRecoveryEmail() async {
+    const recoveryEmail = 'dimme.spa@gmail.com';
+    const defaultPass = 'admin123';
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Recuperação de Credenciais'),
+          content: const Text(
+            'Ao confirmar, a senha do Super Admin será redefinida para o padrão e um e-mail será preparado para você.\n\n'
+            'Destino: $recoveryEmail',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                try {
+                  setState(() => _isLoading = true);
+
+                  // 1. Resetar senha no banco
+                  await _adminRepository.resetAdminPassword(
+                    newPassword: defaultPass,
+                  );
+
+                  // 2. Preparar envio de e-mail
+                  final Uri emailLaunchUri = Uri(
+                    scheme: 'mailto',
+                    path: recoveryEmail,
+                    query: _encodeQueryParameters(<String, String>{
+                      'subject': 'Recuperação de Credenciais - SushiGen',
+                      'body':
+                          'Olá Dimme,\n\n'
+                          'Aqui estão as credenciais atuais do Super Admin:\n\n'
+                          'Usuário: superadmin\n'
+                          'Senha: $defaultPass\n\n'
+                          'Este reset foi solicitado através do sistema no computador.',
+                    }),
+                  );
+
+                  if (await canLaunchUrl(emailLaunchUri)) {
+                    await launchUrl(emailLaunchUri);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Senha redefinida e e-mail aberto.'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Senha resetada para "admin123", mas não foi possível abrir o e-mail.',
+                          ),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Erro: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                } finally {
+                  if (mounted) {
+                    setState(() => _isLoading = false);
+                  }
+                }
+              },
+              child: const Text('Enviar Credenciais'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -149,49 +253,15 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     ),
                     const SizedBox(height: 16),
 
+                    TextButton(
+                      onPressed: _showRecoveryEmail,
+                      child: const Text('Recuperar senha por e-mail'),
+                    ),
+
                     // Botão Voltar
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: const Text('Voltar'),
-                    ),
-
-                    // Informação de Credenciais (apenas para desenvolvimento)
-                    const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.blue[50],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue[200]!),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(Icons.info, color: Colors.blue[700], size: 20),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Credenciais Padrão:',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue[900],
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Usuário: superadmin',
-                            style: TextStyle(
-                              fontFamily: 'monospace',
-                              color: Colors.blue[800],
-                            ),
-                          ),
-                          Text(
-                            'Senha: admin123',
-                            style: TextStyle(
-                              fontFamily: 'monospace',
-                              color: Colors.blue[800],
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ],
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/cash_flow_entry.dart';
 import '../../data/repositories/cash_flow_repository.dart';
+import '../../../sales/data/repositories/sale_repository.dart';
 
 // Estado do fluxo de caixa
 class CashFlowState {
@@ -11,6 +12,7 @@ class CashFlowState {
   final DateTime? endDate;
   final String? selectedType; // 'income', 'expense' ou null (todos)
   final String? selectedCategory;
+  final bool onlyIfood; // Filtro para vendas do iFood
   final Map<String, double> balance;
 
   CashFlowState({
@@ -21,6 +23,7 @@ class CashFlowState {
     this.endDate,
     this.selectedType,
     this.selectedCategory,
+    this.onlyIfood = false,
     this.balance = const {'income': 0, 'expense': 0, 'balance': 0},
   });
 
@@ -32,6 +35,7 @@ class CashFlowState {
     DateTime? endDate,
     String? selectedType,
     String? selectedCategory,
+    bool? onlyIfood,
     Map<String, double>? balance,
     bool clearType = false,
     bool clearCategory = false,
@@ -46,6 +50,7 @@ class CashFlowState {
       selectedCategory: clearCategory
           ? null
           : (selectedCategory ?? this.selectedCategory),
+      onlyIfood: onlyIfood ?? this.onlyIfood,
       balance: balance ?? this.balance,
     );
   }
@@ -95,6 +100,27 @@ class CashFlowNotifier extends StateNotifier<CashFlowState> {
         entries = entries
             .where((e) => e.category == state.selectedCategory)
             .toList();
+      }
+
+      // Filtro iFood (só vendas)
+      if (state.onlyIfood) {
+        final saleRepo = SaleRepository();
+        final ifoodEntries = <CashFlowEntry>[];
+        
+        for (final entry in entries) {
+          if (entry.saleId != null) {
+            try {
+              final saleData = await saleRepo.getSaleWithItems(entry.saleId!);
+              if (saleData != null && saleData['sale'].isIfood) {
+                ifoodEntries.add(entry);
+              }
+            } catch (e) {
+              // Ignorar erros de vendas não encontradas
+            }
+          }
+        }
+        
+        entries = ifoodEntries;
       }
 
       // Calcular saldo
@@ -174,6 +200,12 @@ class CashFlowNotifier extends StateNotifier<CashFlowState> {
     loadEntries();
   }
 
+  // Filtrar por iFood
+  void toggleIfoodFilter() {
+    state = state.copyWith(onlyIfood: !state.onlyIfood);
+    loadEntries();
+  }
+
   // Limpar filtros
   void clearFilters() {
     final now = DateTime.now();
@@ -182,6 +214,7 @@ class CashFlowNotifier extends StateNotifier<CashFlowState> {
       endDate: DateTime(now.year, now.month + 1, 0, 23, 59, 59),
       clearType: true,
       clearCategory: true,
+      onlyIfood: false,
     );
     loadEntries();
   }

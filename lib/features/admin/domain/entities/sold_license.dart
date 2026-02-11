@@ -2,8 +2,6 @@ class SoldLicense {
   final String id;
   final String customerId;
   final String licenseKey;
-  final String username;
-  final String passwordHash;
   final int days;
   final DateTime startDate;
   final DateTime expirationDate;
@@ -18,8 +16,6 @@ class SoldLicense {
     required this.id,
     required this.customerId,
     required this.licenseKey,
-    required this.username,
-    required this.passwordHash,
     required this.days,
     required this.startDate,
     required this.expirationDate,
@@ -48,8 +44,6 @@ class SoldLicense {
     String? id,
     String? customerId,
     String? licenseKey,
-    String? username,
-    String? passwordHash,
     int? days,
     DateTime? startDate,
     DateTime? expirationDate,
@@ -64,8 +58,6 @@ class SoldLicense {
       id: id ?? this.id,
       customerId: customerId ?? this.customerId,
       licenseKey: licenseKey ?? this.licenseKey,
-      username: username ?? this.username,
-      passwordHash: passwordHash ?? this.passwordHash,
       days: days ?? this.days,
       startDate: startDate ?? this.startDate,
       expirationDate: expirationDate ?? this.expirationDate,
@@ -83,8 +75,6 @@ class SoldLicense {
       'id': id,
       'customer_id': customerId,
       'license_key': licenseKey,
-      'username': username,
-      'password_hash': passwordHash,
       'days': days,
       'start_date': startDate.toIso8601String(),
       'expiration_date': expirationDate.toIso8601String(),
@@ -102,8 +92,6 @@ class SoldLicense {
       id: map['id'] as String,
       customerId: map['customer_id'] as String,
       licenseKey: map['license_key'] as String,
-      username: map['username'] as String,
-      passwordHash: map['password_hash'] as String,
       days: map['days'] as int,
       startDate: DateTime.parse(map['start_date'] as String),
       expirationDate: DateTime.parse(map['expiration_date'] as String),

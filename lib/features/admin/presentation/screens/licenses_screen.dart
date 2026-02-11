@@ -170,13 +170,13 @@ class _LicensesScreenState extends ConsumerState<LicensesScreen> {
       child: ExpansionTile(
         leading: Icon(statusIcon, color: statusColor, size: 32),
         title: Text(
-          license.username,
+          customerName ?? 'Cliente desconhecido',
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (customerName != null) Text('Cliente: $customerName'),
+            Text('Chave: ${license.licenseKey.substring(0, 8)}...'),
             const SizedBox(height: 4),
             Text(
               'Status: ${license.statusDisplay}',
@@ -190,7 +190,6 @@ class _LicensesScreenState extends ConsumerState<LicensesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Usuário:', license.username),
                 _buildInfoRow('Dias:', '${license.days} dias'),
                 _buildInfoRow('Início:', dateFormat.format(license.startDate)),
                 _buildInfoRow(

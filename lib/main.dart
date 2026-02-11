@@ -6,9 +6,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/database/database_helper.dart';
 import 'core/update/widgets/update_checker.dart';
+import 'features/admin/data/repositories/admin_repository.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/sales/presentation/screens/quick_sale_screen.dart';
-import 'features/auth/data/repositories/auth_repository.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/auth/presentation/screens/license_renewal_screen.dart';
 import 'features/products/presentation/screens/products_list_screen.dart';
@@ -33,55 +33,19 @@ void main() async {
   await initializeDateFormatting('pt_BR', null);
   Intl.defaultLocale = 'pt_BR';
 
-  // Criar usuário de teste automaticamente
-  await _setupTestUser();
-
-  runApp(const ProviderScope(child: MyApp()));
-}
-
-Future<void> _setupTestUser() async {
+  // Reparar banco administrativo e garantir superadmin
   try {
     final dbHelper = DatabaseHelper();
-    final db = await dbHelper.database;
-    final authRepo = AuthRepository();
-
-    // Verificar se usuário admin já existe
-    final existingUsers = await db.query(
-      'users',
-      where: 'username = ?',
-      whereArgs: ['admin'],
-    );
-
-    if (existingUsers.isNotEmpty) {
-      print('ℹ️ Usuário admin já existe. Pulando criação...');
-      return;
-    }
-
-    // Criar usuário admin
-    final user = await authRepo.createUser(
-      username: 'admin',
-      password: 'admin123',
-      email: 'admin@sushigen.com',
-      role: 'admin',
-    );
-
-    // Criar licença vitalícia
-    final expirationDate = DateTime.now().add(
-      const Duration(days: 36500),
-    ); // 100 anos
-    await authRepo.createLicense(
-      userId: user.id,
-      licenseKey: '1A56-0FD1-4814-E762',
-      expirationDate: expirationDate,
-      maxDevices: 10,
-    );
-
-    print('✅ Usuário criado: admin / admin123');
-    print('✅ Chave: 1A56-0FD1-4814-E762');
-    print('✅ Licença válida até: ${expirationDate.year}');
+    await dbHelper.adminDatabase;
+    // await dbHelper.backupAdminDatabase(); // Temporariamente desabilitado
+    final adminRepository = AdminRepository();
+    await adminRepository.ensureAdminAccount();
+    await adminRepository.cleanupAdminData();
   } catch (e) {
-    print('⚠️ Erro ao configurar usuário de teste: $e');
+    print('⚠️ Erro ao reparar banco administrativo: $e');
   }
+
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
