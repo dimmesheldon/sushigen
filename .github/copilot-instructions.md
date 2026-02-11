@@ -11,6 +11,7 @@
 - [x] Lançar o projeto
 - [x] Garantir documentação completa
 - [x] Sistema de licenciamento inteligente
+- [x] Documentação completa build Windows (9 docs, 1,777 linhas)
 
 ## Requisitos do Projeto
 - **Tipo**: Flutter Desktop Application (Windows/Mac)
@@ -241,6 +242,31 @@ flutter run -d macos
 # Build para produção
 flutter build macos --release
 ```
+
+## Build Windows (no PC Windows)
+
+**Ver documentação completa:** `LEIA_ISSO_NO_WINDOWS.md`
+
+```powershell
+# Build Windows (no PC Windows)
+flutter clean
+flutter build windows --release
+
+# Criar ZIP de distribuição
+Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "sushigen-v1.0.2-windows.zip" -Force
+
+# Publicar no GitHub
+gh release create v1.0.2 sushigen-v1.0.2-windows.zip --title "SushiGen v1.0.2"
+```
+
+**Documentação disponível:**
+- `LEIA_ISSO_NO_WINDOWS.md` - ⭐ COMECE AQUI no Windows
+- `BUILD_WINDOWS_INICIO_RAPIDO.md` - Comandos prontos
+- `GUIA_BUILD_WINDOWS_PC.md` - Guia completo (369 linhas)
+- `build_windows_script.md` - Script PowerShell automatizado
+- `ESTRATEGIA_BUILD_WINDOWS.md` - Por que build local
+
+**Total:** 9 documentos, 1,777 linhas de documentação
 
 ## Stack Tecnológica
 - Flutter 3.x
