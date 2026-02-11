@@ -6,20 +6,30 @@ class ProductRepository {
 
   // Criar produto
   Future<Product> createProduct(Product product) async {
+    print('➕ ========================================');
+    print('➕ CRIANDO PRODUTO: ${product.name}');
     final db = await _dbHelper.database;
+    print('➕ Database: ${db.path}');
     await db.insert('products', product.toMap());
+    print('➕ Produto criado com sucesso!');
+    print('➕ ========================================');
     return product;
   }
 
   // Buscar todos os produtos
   Future<List<Product>> getAllProducts() async {
+    print('📦 ========================================');
+    print('📦 BUSCANDO PRODUTOS');
     final db = await _dbHelper.database;
+    print('📦 Database obtido: ${db.path}');
     final result = await db.query(
       'products',
       where: 'is_active = ?',
       whereArgs: [1],
       orderBy: 'name ASC',
     );
+    print('📦 Total de produtos encontrados: ${result.length}');
+    print('📦 ========================================');
     return result.map((map) => Product.fromMap(map)).toList();
   }
 

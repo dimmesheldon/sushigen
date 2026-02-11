@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/cash_flow_entry.dart';
 import '../providers/cash_flow_provider.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/utils/currency_input_formatter.dart';
 
 class CashFlowFormScreen extends ConsumerStatefulWidget {
@@ -235,16 +234,12 @@ class _CashFlowFormScreenState extends ConsumerState<CashFlowFormScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final userId = authState.user?.id ?? '';
-
       final entry = CashFlowEntry.create(
         type: widget.type,
         category: _selectedCategory!,
         amount: CurrencyParser.parse(_amountController.text),
         description: _descriptionController.text.trim(),
         date: _selectedDate,
-        userId: userId,
       );
 
       if (widget.entry != null) {

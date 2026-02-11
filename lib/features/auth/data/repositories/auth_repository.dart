@@ -4,6 +4,8 @@ import 'package:uuid/uuid.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/entities/license.dart';
 import '../../../../core/database/database_helper.dart';
+import '../../../admin/domain/entities/company_user.dart';
+import '../../../admin/domain/entities/sold_license.dart';
 
 class AuthRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
@@ -20,42 +22,111 @@ class AuthRepository {
     String password,
     String licenseKey,
   ) async {
-    // 🔴 MUDANÇA: Usar banco ADMINISTRATIVO para validação
+    print('🔐 ========================================');
+    print('🔐 INICIANDO LOGIN');
+    print('🔐 Usuário: $username');
+    print('🔐 ========================================');
+
+    // � NOVO SISTEMA MULTI-TENANT
+    // 1. Validar credenciais em company_users (banco admin)
     final db = await _dbHelper.adminDatabase;
-
-    // Verificar licença
-    final licenseResult = await db.query(
-      'licenses',
-      where: 'license_key = ?',
-      whereArgs: [licenseKey],
-    );
-
-    if (licenseResult.isEmpty) {
-      throw Exception('Chave de licença inválida');
-    }
-
-    final license = License.fromMap(licenseResult.first);
-
-    if (!license.isValid) {
-      throw Exception('Licença expirada ou inativa');
-    }
-
-    // Autenticar usuário
     final passwordHash = _hashPassword(password);
+
+    print('🔍 Buscando usuário no banco admin...');
+
     final userResult = await db.query(
-      'users',
-      where: 'username = ? AND password_hash = ?',
+      'company_users',
+      where: 'username = ? AND password_hash = ? AND is_active = 1',
       whereArgs: [username, passwordHash],
     );
 
     if (userResult.isEmpty) {
+      print('❌ Usuário ou senha inválidos');
       throw Exception('Usuário ou senha inválidos');
     }
 
-    // 🟢 MUDANÇA: Inicializar banco específico do usuário
-    await _dbHelper.setCurrentUser(username);
+    final companyUser = CompanyUser.fromMap(userResult.first);
+    print('✅ Usuário encontrado!');
+    print('📋 Customer ID: ${companyUser.customerId}');
+    print('📋 Username: ${companyUser.username}');
+    print('📋 Role: ${companyUser.role}');
 
-    return User.fromMap(userResult.first);
+    // 🔥 SUPERADMIN NÃO PRECISA DE LICENÇA!
+    if (username.toLowerCase() == 'superadmin' && companyUser.role == 'admin') {
+      print('👑 SUPERADMIN detectado - pulando validação de licença!');
+      print('🔄 Inicializando banco do cliente...');
+
+      // Inicializar banco específico da empresa (customer_id)
+      await _dbHelper.setCurrentCustomer(companyUser.customerId);
+
+      print('✅ Banco inicializado com sucesso!');
+      print('🔐 ========================================');
+
+      // Retornar usuário
+      return User(
+        id: companyUser.id,
+        username: companyUser.username,
+        passwordHash: companyUser.passwordHash,
+        email: companyUser.email,
+        role: companyUser.role,
+        createdAt: companyUser.createdAt,
+        updatedAt: companyUser.updatedAt,
+      );
+    }
+
+    // 2. Buscar licença da empresa (sold_licenses) - apenas para usuários normais
+    print('🔍 Validando licença...');
+    final licenseResult = await db.query(
+      'sold_licenses',
+      where: 'license_key = ? AND customer_id = ?',
+      whereArgs: [licenseKey, companyUser.customerId],
+    );
+
+    if (licenseResult.isEmpty) {
+      print('❌ Licença inválida');
+      throw Exception(
+        'Chave de licença inválida ou não pertence a esta empresa',
+      );
+    }
+
+    final soldLicense = SoldLicense.fromMap(licenseResult.first);
+
+    // 3. Validar licença
+    if (soldLicense.status == 'revoked') {
+      print('❌ Licença revogada');
+      throw Exception('Licença revogada');
+    }
+
+    if (soldLicense.isExpired) {
+      print('❌ Licença expirada');
+      throw Exception(
+        'Licença expirada em ${_formatDate(soldLicense.expirationDate)}',
+      );
+    }
+
+    print('✅ Licença válida!');
+    print('🔄 Inicializando banco do cliente...');
+
+    // 4. Inicializar banco específico da empresa (customer_id)
+    await _dbHelper.setCurrentCustomer(companyUser.customerId);
+
+    print('✅ Banco inicializado com sucesso!');
+    print('🔐 ========================================');
+
+    // 5. Converter CompanyUser para User (entidade do sistema de auth)
+    return User(
+      id: companyUser.id,
+      username: companyUser.username,
+      passwordHash: companyUser.passwordHash,
+      email: companyUser.email,
+      role: companyUser.role,
+      createdAt: companyUser.createdAt,
+      updatedAt: companyUser.updatedAt,
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
   /// Autentica sem necessidade de licença (para login após primeira ativação)
@@ -63,14 +134,14 @@ class AuthRepository {
     String username,
     String password,
   ) async {
-    // 🔴 MUDANÇA: Usar banco ADMINISTRATIVO para validação
+    // � NOVO SISTEMA MULTI-TENANT
     final db = await _dbHelper.adminDatabase;
-
-    // Autenticar usuário
     final passwordHash = _hashPassword(password);
+
+    // Autenticar via company_users
     final userResult = await db.query(
-      'users',
-      where: 'username = ? AND password_hash = ?',
+      'company_users',
+      where: 'username = ? AND password_hash = ? AND is_active = 1',
       whereArgs: [username, passwordHash],
     );
 
@@ -78,47 +149,88 @@ class AuthRepository {
       throw Exception('Usuário ou senha inválidos');
     }
 
-    // 🟢 MUDANÇA: Inicializar banco específico do usuário
-    await _dbHelper.setCurrentUser(username);
+    final companyUser = CompanyUser.fromMap(userResult.first);
 
-    return User.fromMap(userResult.first);
+    // Verificar se a empresa tem licença ativa
+    final licenseResult = await db.query(
+      'sold_licenses',
+      where: 'customer_id = ? AND status = ?',
+      whereArgs: [companyUser.customerId, 'active'],
+      orderBy: 'created_at DESC',
+      limit: 1,
+    );
+
+    if (licenseResult.isEmpty) {
+      throw Exception('Nenhuma licença ativa encontrada para esta empresa');
+    }
+
+    final soldLicense = SoldLicense.fromMap(licenseResult.first);
+
+    if (soldLicense.isExpired) {
+      throw Exception(
+        'Licença expirada em ${_formatDate(soldLicense.expirationDate)}',
+      );
+    }
+
+    // Inicializar banco específico da empresa
+    await _dbHelper.setCurrentCustomer(companyUser.customerId);
+
+    return User(
+      id: companyUser.id,
+      username: companyUser.username,
+      passwordHash: companyUser.passwordHash,
+      email: companyUser.email,
+      role: companyUser.role,
+      createdAt: companyUser.createdAt,
+      updatedAt: companyUser.updatedAt,
+    );
   }
 
   /// Verifica se usuário já possui licença ativa
   Future<License?> getActiveLicense(String username) async {
-    // 🔴 MUDANÇA: Usar banco ADMINISTRATIVO
+    // � NOVO SISTEMA MULTI-TENANT
     final db = await _dbHelper.adminDatabase;
 
-    // Buscar usuário
+    // Buscar usuário em company_users
     final userResult = await db.query(
-      'users',
+      'company_users',
       where: 'username = ?',
       whereArgs: [username],
     );
 
     if (userResult.isEmpty) return null;
 
-    final userId = userResult.first['id'] as String;
+    final companyUser = CompanyUser.fromMap(userResult.first);
 
-    // Buscar licença ativa
+    // Buscar licença ativa da empresa
     final licenseResult = await db.query(
-      'licenses',
-      where: 'user_id = ? AND is_active = 1',
-      whereArgs: [userId],
+      'sold_licenses',
+      where: 'customer_id = ? AND status = ?',
+      whereArgs: [companyUser.customerId, 'active'],
       orderBy: 'created_at DESC',
       limit: 1,
     );
 
     if (licenseResult.isEmpty) return null;
 
-    final license = License.fromMap(licenseResult.first);
+    final soldLicense = SoldLicense.fromMap(licenseResult.first);
 
     // Verificar se ainda está válida
-    if (!license.isValid) {
+    if (soldLicense.isExpired) {
       return null;
     }
 
-    return license;
+    // Converter SoldLicense para License (entidade antiga para compatibilidade)
+    return License(
+      id: soldLicense.id,
+      licenseKey: soldLicense.licenseKey,
+      userId: companyUser.customerId, // Agora representa o customer_id
+      expirationDate: soldLicense.expirationDate,
+      isActive: soldLicense.status == 'active',
+      maxDevices: 3, // Valor padrão
+      createdAt: soldLicense.createdAt,
+      updatedAt: soldLicense.updatedAt,
+    );
   }
 
   /// Atualiza a licença de um usuário existente
@@ -126,12 +238,12 @@ class AuthRepository {
     required String username,
     required String licenseKey,
   }) async {
-    // 🔴 MUDANÇA: Usar banco ADMINISTRATIVO
+    // � NOVO SISTEMA MULTI-TENANT
     final db = await _dbHelper.adminDatabase;
 
     // Verificar se a licença existe e é válida
     final licenseResult = await db.query(
-      'licenses',
+      'sold_licenses',
       where: 'license_key = ?',
       whereArgs: [licenseKey],
     );
@@ -140,15 +252,15 @@ class AuthRepository {
       throw Exception('Chave de licença inválida');
     }
 
-    final license = License.fromMap(licenseResult.first);
+    final soldLicense = SoldLicense.fromMap(licenseResult.first);
 
-    if (!license.isValid) {
-      throw Exception('Licença expirada ou inativa');
+    if (soldLicense.isExpired) {
+      throw Exception('Licença expirada');
     }
 
-    // Buscar usuário
+    // Buscar usuário em company_users
     final userResult = await db.query(
-      'users',
+      'company_users',
       where: 'username = ?',
       whereArgs: [username],
     );
@@ -157,20 +269,17 @@ class AuthRepository {
       throw Exception('Usuário não encontrado');
     }
 
-    final userId = userResult.first['id'] as String;
+    final companyUser = CompanyUser.fromMap(userResult.first);
 
-    // Desativar licenças antigas do usuário
-    await db.update(
-      'licenses',
-      {'is_active': 0, 'updated_at': DateTime.now().toIso8601String()},
-      where: 'user_id = ?',
-      whereArgs: [userId],
-    );
+    // Verificar se a licença pertence à mesma empresa
+    if (soldLicense.customerId != companyUser.customerId) {
+      throw Exception('Esta licença não pertence à sua empresa');
+    }
 
-    // Associar nova licença ao usuário
+    // Ativar a licença (caso esteja inativa)
     await db.update(
-      'licenses',
-      {'user_id': userId, 'updated_at': DateTime.now().toIso8601String()},
+      'sold_licenses',
+      {'status': 'active', 'updated_at': DateTime.now().toIso8601String()},
       where: 'license_key = ?',
       whereArgs: [licenseKey],
     );

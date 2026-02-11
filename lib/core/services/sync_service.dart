@@ -8,6 +8,12 @@ class SyncService {
   // Sincronizar produtos
   Future<void> syncProducts() async {
     try {
+      // Obter customer_id atual
+      final customerId = _dbHelper.getCurrentCustomerId();
+      if (customerId == null) {
+        throw Exception('Customer ID não definido. Faça login primeiro.');
+      }
+
       final db = await _dbHelper.database;
 
       // 1. Buscar produtos locais não sincronizados
@@ -17,7 +23,7 @@ class SyncService {
         whereArgs: [0],
       );
 
-      // 2. Upload para Firestore
+      // 2. Upload para Firestore (subcoleção do cliente)
       for (var product in localProducts) {
         final productData = Map<String, dynamic>.from(product);
 
@@ -33,7 +39,10 @@ class SyncService {
           );
         }
 
+        // Salvar em subcoleção do cliente
         await _firestore
+            .collection('customers')
+            .doc(customerId)
             .collection('products')
             .doc(product['id'] as String)
             .set(productData, SetOptions(merge: true));
@@ -57,6 +66,12 @@ class SyncService {
   // Sincronizar vendas
   Future<void> syncSales() async {
     try {
+      // Obter customer_id atual
+      final customerId = _dbHelper.getCurrentCustomerId();
+      if (customerId == null) {
+        throw Exception('Customer ID não definido. Faça login primeiro.');
+      }
+
       final db = await _dbHelper.database;
 
       // 1. Buscar vendas não sincronizadas
@@ -66,7 +81,7 @@ class SyncService {
         whereArgs: [0],
       );
 
-      // 2. Upload para Firestore
+      // 2. Upload para Firestore (subcoleção do cliente)
       for (var sale in localSales) {
         final saleData = Map<String, dynamic>.from(sale);
 
@@ -82,7 +97,10 @@ class SyncService {
           );
         }
 
+        // Salvar em subcoleção do cliente
         await _firestore
+            .collection('customers')
+            .doc(customerId)
             .collection('sales')
             .doc(sale['id'] as String)
             .set(saleData, SetOptions(merge: true));
@@ -104,6 +122,8 @@ class SyncService {
           }
 
           await _firestore
+              .collection('customers')
+              .doc(customerId)
               .collection('sale_items')
               .doc(item['id'] as String)
               .set(itemData, SetOptions(merge: true));
@@ -128,6 +148,12 @@ class SyncService {
   // Sincronizar fluxo de caixa
   Future<void> syncCashFlow() async {
     try {
+      // Obter customer_id atual
+      final customerId = _dbHelper.getCurrentCustomerId();
+      if (customerId == null) {
+        throw Exception('Customer ID não definido. Faça login primeiro.');
+      }
+
       final db = await _dbHelper.database;
 
       final localEntries = await db.query(
@@ -156,7 +182,10 @@ class SyncService {
           );
         }
 
+        // Salvar em subcoleção do cliente
         await _firestore
+            .collection('customers')
+            .doc(customerId)
             .collection('cash_flow')
             .doc(entry['id'] as String)
             .set(entryData, SetOptions(merge: true));
@@ -190,9 +219,20 @@ class SyncService {
   // Baixar produtos do servidor
   Future<void> downloadProducts() async {
     try {
+      // Obter customer_id atual
+      final customerId = _dbHelper.getCurrentCustomerId();
+      if (customerId == null) {
+        throw Exception('Customer ID não definido. Faça login primeiro.');
+      }
+
       final db = await _dbHelper.database;
 
-      final snapshot = await _firestore.collection('products').get();
+      // Buscar produtos da subcoleção do cliente
+      final snapshot = await _firestore
+          .collection('customers')
+          .doc(customerId)
+          .collection('products')
+          .get();
 
       for (var doc in snapshot.docs) {
         final data = Map<String, dynamic>.from(doc.data());
@@ -251,9 +291,18 @@ class SyncService {
   // Baixar vendas do servidor
   Future<void> downloadSales({DateTime? since}) async {
     try {
+      // Obter customer_id atual
+      final customerId = _dbHelper.getCurrentCustomerId();
+      if (customerId == null) {
+        throw Exception('Customer ID não definido. Faça login primeiro.');
+      }
+
       final db = await _dbHelper.database;
 
-      Query<Map<String, dynamic>> query = _firestore.collection('sales');
+      Query<Map<String, dynamic>> query = _firestore
+          .collection('customers')
+          .doc(customerId)
+          .collection('sales');
 
       // Se especificado, baixar apenas vendas após uma data
       if (since != null) {
@@ -290,8 +339,10 @@ class SyncService {
         if (existing.isEmpty) {
           await db.insert('sales', data);
 
-          // Baixar itens da venda
+          // Baixar itens da venda da subcoleção do cliente
           final itemsSnapshot = await _firestore
+              .collection('customers')
+              .doc(customerId)
               .collection('sale_items')
               .where('sale_id', isEqualTo: doc.id)
               .get();

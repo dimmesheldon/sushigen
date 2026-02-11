@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../sales/data/repositories/sale_repository.dart';
 import '../../../products/data/repositories/product_repository.dart';
 import '../../../../core/providers/sync_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -59,7 +60,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Consumer(
+          builder: (context, ref, child) {
+            final authState = ref.watch(authProvider);
+            final userName = authState.user?.username ?? '';
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Dashboard', style: TextStyle(fontSize: 20)),
+                if (userName.isNotEmpty)
+                  Text(
+                    userName,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
         backgroundColor: Colors.red.shade700,
         foregroundColor: Colors.white,
         actions: [
@@ -393,6 +414,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/reports');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.account_balance_wallet),
+            title: const Text('Fluxo de Caixa'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/cashflow');
             },
           ),
           const Divider(),

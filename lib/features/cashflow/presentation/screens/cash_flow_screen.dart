@@ -418,11 +418,53 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                     color: color,
                   ),
                 ),
-                if (entry.saleId != null)
-                  Text(
-                    'Venda',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (entry.saleId != null)
+                      Text(
+                        'Venda',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    // Badge iFood
+                    if (entry.saleId != null)
+                      FutureBuilder<Map<String, dynamic>?>(
+                        future: SaleRepository().getSaleWithItems(
+                          entry.saleId!,
+                        ),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData && snapshot.data != null) {
+                            final sale = snapshot.data!['sale'] as Sale;
+                            if (sale.isIfood) {
+                              return Container(
+                                margin: const EdgeInsets.only(left: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'iFood',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                  ],
+                ),
               ],
             ),
             onTap: () {
@@ -479,19 +521,6 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.person, size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Usuário: ${entry.userId}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -720,13 +749,21 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
   }
 
   void _showFiltersDialog(BuildContext context) {
+    final cashFlowState = ref.read(cashFlowProvider);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Filtros'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Text(
+              'Tipo de Movimentação',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
             ListTile(
               title: const Text('Todas'),
               leading: const Icon(Icons.all_inclusive),
@@ -751,9 +788,45 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                 Navigator.pop(context);
               },
             ),
+            const Divider(),
+            const SizedBox(height: 8),
+            const Text(
+              'Vendas',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            CheckboxListTile(
+              title: const Text('Somente iFood'),
+              secondary: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'iFood',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              value: cashFlowState.onlyIfood,
+              onChanged: (value) {
+                ref.read(cashFlowProvider.notifier).toggleIfoodFilter();
+                Navigator.pop(context);
+              },
+            ),
           ],
         ),
         actions: [
+          TextButton(
+            onPressed: () {
+              ref.read(cashFlowProvider.notifier).clearFilters();
+              Navigator.pop(context);
+            },
+            child: const Text('Limpar Filtros'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Fechar'),
@@ -981,6 +1054,25 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
           .where((e) => e.type == 'expense')
           .toList();
 
+      print('🔵 Buscando informações de vendas iFood...');
+      // Criar mapa de sale_id -> isIfood
+      final saleRepo = SaleRepository();
+      final saleIfoodMap = <String, bool>{};
+
+      for (final entry in incomeEntries) {
+        if (entry.saleId != null) {
+          try {
+            final saleData = await saleRepo.getSaleWithItems(entry.saleId!);
+            if (saleData != null) {
+              saleIfoodMap[entry.saleId!] = saleData['sale'].isIfood;
+            }
+          } catch (e) {
+            // Se não encontrar venda, assume Local
+            saleIfoodMap[entry.saleId!] = false;
+          }
+        }
+      }
+
       print('🔵 Calculando totais...');
       // Calcular totais
       final totalIncome = incomeEntries.fold<double>(
@@ -1008,7 +1100,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                 children: [
                   pw.Text(
                     'FLUXO DE CAIXA',
-                    style: const pw.TextStyle(fontSize: 24),
+                    style: const pw.TextStyle(fontSize: 18),
                   ),
                   pw.SizedBox(height: 8),
                   pw.Text(
@@ -1047,13 +1139,13 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                     children: [
                       pw.Text(
                         'RECEITAS',
-                        style: const pw.TextStyle(fontSize: 14),
+                        style: const pw.TextStyle(fontSize: 10),
                       ),
                       pw.SizedBox(height: 4),
                       pw.Text(
                         'R\$ ${totalIncome.toStringAsFixed(2)}',
                         style: const pw.TextStyle(
-                          fontSize: 18,
+                          fontSize: 14,
                           color: PdfColors.green,
                         ),
                       ),
@@ -1063,13 +1155,13 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                     children: [
                       pw.Text(
                         'DESPESAS',
-                        style: const pw.TextStyle(fontSize: 14),
+                        style: const pw.TextStyle(fontSize: 10),
                       ),
                       pw.SizedBox(height: 4),
                       pw.Text(
                         'R\$ ${totalExpense.toStringAsFixed(2)}',
                         style: const pw.TextStyle(
-                          fontSize: 18,
+                          fontSize: 14,
                           color: PdfColors.red,
                         ),
                       ),
@@ -1077,12 +1169,12 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                   ),
                   pw.Column(
                     children: [
-                      pw.Text('SALDO', style: const pw.TextStyle(fontSize: 14)),
+                      pw.Text('SALDO', style: const pw.TextStyle(fontSize: 10)),
                       pw.SizedBox(height: 4),
                       pw.Text(
                         'R\$ ${balance.toStringAsFixed(2)}',
                         style: pw.TextStyle(
-                          fontSize: 18,
+                          fontSize: 14,
                           color: balance >= 0
                               ? PdfColors.blue
                               : PdfColors.orange,
@@ -1097,10 +1189,17 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
             // Receitas
             if (incomeEntries.isNotEmpty) ...[
               pw.SizedBox(height: 24),
-              pw.Text('RECEITAS', style: const pw.TextStyle(fontSize: 16)),
+              pw.Text('RECEITAS', style: const pw.TextStyle(fontSize: 12)),
               pw.SizedBox(height: 8),
               pw.Table(
                 border: pw.TableBorder.all(color: PdfColors.grey300),
+                columnWidths: {
+                  0: const pw.FlexColumnWidth(1.2), // Data
+                  1: const pw.FlexColumnWidth(2.5), // Descrição
+                  2: const pw.FlexColumnWidth(1.5), // Categoria
+                  3: const pw.FlexColumnWidth(1.0), // Origem
+                  4: const pw.FlexColumnWidth(1.5), // Valor
+                },
                 children: [
                   // Cabeçalho
                   pw.TableRow(
@@ -1112,36 +1211,49 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                         padding: const pw.EdgeInsets.all(8),
                         child: pw.Text(
                           'Data',
-                          style: const pw.TextStyle(fontSize: 14),
+                          style: const pw.TextStyle(fontSize: 10),
                         ),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
                         child: pw.Text(
                           'Descrição',
-                          style: const pw.TextStyle(fontSize: 14),
+                          style: const pw.TextStyle(fontSize: 10),
                         ),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
                         child: pw.Text(
                           'Categoria',
-                          style: const pw.TextStyle(fontSize: 14),
+                          style: const pw.TextStyle(fontSize: 10),
+                        ),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8),
+                        child: pw.Text(
+                          'Origem',
+                          style: const pw.TextStyle(fontSize: 10),
                         ),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
                         child: pw.Text(
                           'Valor',
-                          style: const pw.TextStyle(fontSize: 14),
+                          style: const pw.TextStyle(fontSize: 10),
                           textAlign: pw.TextAlign.right,
                         ),
                       ),
                     ],
                   ),
                   // Dados
-                  ...incomeEntries.map(
-                    (entry) => pw.TableRow(
+                  ...incomeEntries.map((entry) {
+                    // Determinar origem (iFood ou Local)
+                    final isIfood = entry.saleId != null
+                        ? (saleIfoodMap[entry.saleId!] ?? false)
+                        : false;
+                    final origem = isIfood ? 'iFood' : 'Local';
+
+                    return pw.TableRow(
                       children: [
                         pw.Padding(
                           padding: const pw.EdgeInsets.all(8),
@@ -1166,6 +1278,33 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                         ),
                         pw.Padding(
                           padding: const pw.EdgeInsets.all(8),
+                          child: pw.Container(
+                            padding: const pw.EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: pw.BoxDecoration(
+                              color: isIfood
+                                  ? PdfColors.red100
+                                  : PdfColors.blue100,
+                              borderRadius: const pw.BorderRadius.all(
+                                pw.Radius.circular(4),
+                              ),
+                            ),
+                            child: pw.Text(
+                              origem,
+                              style: pw.TextStyle(
+                                fontSize: 9,
+                                color: isIfood
+                                    ? PdfColors.red900
+                                    : PdfColors.blue900,
+                              ),
+                              textAlign: pw.TextAlign.center,
+                            ),
+                          ),
+                        ),
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.all(8),
                           child: pw.Text(
                             'R\$ ${entry.amount.toStringAsFixed(2)}',
                             style: const pw.TextStyle(fontSize: 10),
@@ -1173,8 +1312,8 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                           ),
                         ),
                       ],
-                    ),
-                  ),
+                    );
+                  }),
                   // Subtotal
                   pw.TableRow(
                     decoration: const pw.BoxDecoration(
@@ -1191,16 +1330,20 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
+                        child: pw.Text(''),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8),
                         child: pw.Text(
                           'SUBTOTAL',
-                          style: const pw.TextStyle(fontSize: 14),
+                          style: const pw.TextStyle(fontSize: 11),
                         ),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
                         child: pw.Text(
                           'R\$ ${totalIncome.toStringAsFixed(2)}',
-                          style: const pw.TextStyle(fontSize: 14),
+                          style: const pw.TextStyle(fontSize: 11),
                           textAlign: pw.TextAlign.right,
                         ),
                       ),
@@ -1213,7 +1356,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
             // Despesas
             if (expenseEntries.isNotEmpty) ...[
               pw.SizedBox(height: 24),
-              pw.Text('DESPESAS', style: const pw.TextStyle(fontSize: 16)),
+              pw.Text('DESPESAS', style: const pw.TextStyle(fontSize: 12)),
               pw.SizedBox(height: 8),
               pw.Table(
                 border: pw.TableBorder.all(color: PdfColors.grey300),
@@ -1226,28 +1369,28 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                         padding: const pw.EdgeInsets.all(8),
                         child: pw.Text(
                           'Data',
-                          style: const pw.TextStyle(fontSize: 14),
+                          style: const pw.TextStyle(fontSize: 10),
                         ),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
                         child: pw.Text(
                           'Descrição',
-                          style: const pw.TextStyle(fontSize: 14),
+                          style: const pw.TextStyle(fontSize: 10),
                         ),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
                         child: pw.Text(
                           'Categoria',
-                          style: const pw.TextStyle(fontSize: 14),
+                          style: const pw.TextStyle(fontSize: 10),
                         ),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
                         child: pw.Text(
                           'Valor',
-                          style: const pw.TextStyle(fontSize: 14),
+                          style: const pw.TextStyle(fontSize: 10),
                           textAlign: pw.TextAlign.right,
                         ),
                       ),
@@ -1305,14 +1448,14 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                         padding: const pw.EdgeInsets.all(8),
                         child: pw.Text(
                           'SUBTOTAL',
-                          style: const pw.TextStyle(fontSize: 14),
+                          style: const pw.TextStyle(fontSize: 11),
                         ),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
                         child: pw.Text(
                           'R\$ ${totalExpense.toStringAsFixed(2)}',
-                          style: const pw.TextStyle(fontSize: 14),
+                          style: const pw.TextStyle(fontSize: 11),
                           textAlign: pw.TextAlign.right,
                         ),
                       ),
@@ -1339,12 +1482,12 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                 children: [
                   pw.Text(
                     'SALDO FINAL',
-                    style: const pw.TextStyle(fontSize: 18),
+                    style: const pw.TextStyle(fontSize: 14),
                   ),
                   pw.Text(
                     'R\$ ${balance.toStringAsFixed(2)}',
                     style: pw.TextStyle(
-                      fontSize: 20,
+                      fontSize: 16,
                       color: balance >= 0 ? PdfColors.blue : PdfColors.orange,
                     ),
                   ),
@@ -1370,10 +1513,32 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
       print('🔵 PDF salvo! Tamanho: ${pdfBytes.length} bytes');
 
       print('🔵 Obtendo diretório de Downloads...');
-      // Salvar direto no arquivo
-      final directory = await getDownloadsDirectory();
+      print('🟢 Platform.isMacOS = ${Platform.isMacOS}');
+      // No macOS, usar o diretório de documentos do app (dentro do sandbox)
+      Directory? directory;
+
+      if (Platform.isMacOS || Platform.isWindows) {
+        print('🟢 Usando pasta Documents para desktop...');
+        // Para desktop, usar pasta de documentos DENTRO DO SANDBOX
+        final appDocDir = await getApplicationDocumentsDirectory();
+        print('🟢 appDocDir = ${appDocDir.path}');
+        // Criar subpasta "PDFs" dentro do diretório de documentos do app
+        directory = Directory('${appDocDir.path}/PDFs');
+        print('🟢 Pasta final = ${directory.path}');
+        if (!directory.existsSync()) {
+          print('🟢 Pasta não existe, criando...');
+          directory.createSync(recursive: true);
+          print('📁 Pasta criada: ${directory.path}');
+        } else {
+          print('🟢 Pasta já existe!');
+        }
+      } else {
+        print('🔴 Usando getDownloadsDirectory para mobile...');
+        directory = await getDownloadsDirectory();
+      }
+
       if (directory == null) {
-        throw Exception('Não foi possível acessar a pasta Downloads');
+        throw Exception('Não foi possível acessar a pasta de documentos');
       }
 
       final fileName =
@@ -1396,7 +1561,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
               textColor: Colors.white,
               onPressed: () async {
                 // Abrir pasta no Finder
-                await Process.run('open', [directory.path]);
+                await Process.run('open', [directory!.path]);
               },
             ),
           ),

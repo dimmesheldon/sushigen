@@ -16,8 +16,6 @@ class GenerateLicenseScreen extends ConsumerStatefulWidget {
 
 class _GenerateLicenseScreenState extends ConsumerState<GenerateLicenseScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
   final _priceController = TextEditingController();
   final _notesController = TextEditingController();
 
@@ -31,17 +29,10 @@ class _GenerateLicenseScreenState extends ConsumerState<GenerateLicenseScreen> {
   void initState() {
     super.initState();
     _selectedCustomer = widget.customer;
-    if (_selectedCustomer != null) {
-      // Sugerir username baseado no nome do cliente
-      final nameParts = _selectedCustomer!.name.toLowerCase().split(' ');
-      _usernameController.text = nameParts.first;
-    }
   }
 
   @override
   void dispose() {
-    _usernameController.dispose();
-    _passwordController.dispose();
     _priceController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -88,10 +79,6 @@ class _GenerateLicenseScreenState extends ConsumerState<GenerateLicenseScreen> {
                 onChanged: (customer) {
                   setState(() {
                     _selectedCustomer = customer;
-                    if (customer != null && _usernameController.text.isEmpty) {
-                      final nameParts = customer.name.toLowerCase().split(' ');
-                      _usernameController.text = nameParts.first;
-                    }
                   });
                 },
                 validator: (value) =>
@@ -99,46 +86,24 @@ class _GenerateLicenseScreenState extends ConsumerState<GenerateLicenseScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Username
-              TextFormField(
-                controller: _usernameController,
-                decoration: const InputDecoration(
-                  labelText: 'Usuário *',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.account_circle),
-                  helperText: 'Nome de usuário para login no sistema',
+              // Informação sobre usuários
+              Card(
+                color: Colors.blue[50],
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue[700]),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Após gerar a licença, você poderá criar múltiplos usuários para esta empresa.',
+                          style: TextStyle(color: Colors.blue[900]),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Digite um usuário';
-                  }
-                  if (value.length < 3) {
-                    return 'Mínimo 3 caracteres';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Senha
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Senha *',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
-                  helperText: 'Senha para login no sistema',
-                ),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Digite uma senha';
-                  }
-                  if (value.length < 4) {
-                    return 'Mínimo 4 caracteres';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 24),
 
@@ -280,9 +245,6 @@ class _GenerateLicenseScreenState extends ConsumerState<GenerateLicenseScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            _buildInfoRow('Usuário:', _usernameController.text),
-            _buildInfoRow('Senha:', _passwordController.text),
             const SizedBox(height: 12),
             const Divider(),
             const SizedBox(height: 12),
@@ -350,24 +312,6 @@ class _GenerateLicenseScreenState extends ConsumerState<GenerateLicenseScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 16))),
-        ],
-      ),
-    );
-  }
-
   Future<void> _generateLicense() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCustomer == null) return;
@@ -382,8 +326,6 @@ class _GenerateLicenseScreenState extends ConsumerState<GenerateLicenseScreen> {
         .read(licensesProvider.notifier)
         .generateLicense(
           customerId: _selectedCustomer!.id,
-          username: _usernameController.text,
-          password: _passwordController.text,
           days: _selectedDays,
           price: price,
           paymentMethod: _paymentMethod,
@@ -395,11 +337,11 @@ class _GenerateLicenseScreenState extends ConsumerState<GenerateLicenseScreen> {
     });
 
     if (license != null) {
-      setState(() {
-        _generatedLicenseKey = license.licenseKey;
-      });
-
       if (mounted) {
+        setState(() {
+          _generatedLicenseKey = license.licenseKey;
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('✅ Licença gerada com sucesso!'),
@@ -408,11 +350,13 @@ class _GenerateLicenseScreenState extends ConsumerState<GenerateLicenseScreen> {
         );
       }
     } else {
+      final error = ref.read(licensesProvider).error;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Erro ao gerar licença'),
+          SnackBar(
+            content: Text('❌ Erro: ${error ?? 'Erro desconhecido'}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

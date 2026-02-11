@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:sushigen/core/database/database_helper.dart';
 import 'package:sushigen/core/utils/license_key_generator.dart';
 import 'package:sushigen/features/auth/data/repositories/auth_repository.dart';
-import 'package:sushigen/features/auth/domain/entities/license.dart';
 import 'package:sushigen/features/products/data/models/product.dart';
 
 /// Script para inicializar o banco de dados com dados de exemplo
