@@ -1,0 +1,178 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Dispara em tags v1.0.0, v1.0.1, v1.0.2, etc
+
+jobs:
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.3'
+          channel: 'stable'
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Build Windows
+        run: flutter build windows --release
+      
+      - name: Create ZIP
+        run: |
+          cd build/windows/x64/runner/Release
+          Compress-Archive -Path * -DestinationPath ../../../../../sushigen-v${{ github.ref_name }}-windows.zip
+      
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: sushigen-v${{ github.ref_name }}-windows.zip
+  
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.3'
+          channel: 'stable'
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Build macOS
+        run: flutter build macos --release
+      
+      - name: Make DMG script executable
+        run: chmod +x create_dmg.sh
+      
+      - name: Create DMG
+        run: ./create_dmg.sh
+      
+      - name: Rename DMG with version
+        run: |
+          VERSION=${{ github.ref_name }}
+          mv SushiGen_v*.dmg SushiGen_${VERSION}_macOS.dmg
+      
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: SushiGen_*.dmg
+  
+  create-release:
+    name: Create GitHub Release
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download Windows build
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-build
+      
+      - name: Download macOS build
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-build
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            sushigen-v${{ github.ref_name }}-windows.zip
+            SushiGen_*.dmg
+          body: |
+            ## 🍣 SushiGen ${{ github.ref_name }}
+            
+            ### 📦 Downloads Disponíveis:
+            
+            #### Windows
+            - **Arquivo**: `sushigen-${{ github.ref_name }}-windows.zip`
+            - **Tamanho**: ~25-30 MB
+            - **Requisitos**: Windows 10 ou superior
+            
+            #### macOS
+            - **Arquivo**: `SushiGen_${{ github.ref_name }}_macOS.dmg`
+            - **Tamanho**: ~41 MB
+            - **Requisitos**: macOS 10.13 ou superior
+            
+            ---
+            
+            ### 🚀 Como Instalar
+            
+            #### Windows:
+            1. Baixe `sushigen-${{ github.ref_name }}-windows.zip`
+            2. Extraia todos os arquivos para uma pasta (ex: `C:\Program Files\SushiGen`)
+            3. Execute `sushigen.exe`
+            4. **Importante**: Mantenha todos os arquivos na mesma pasta!
+            
+            #### macOS:
+            1. Baixe `SushiGen_${{ github.ref_name }}_macOS.dmg`
+            2. Clique duas vezes no arquivo baixado
+            3. Arraste o ícone SushiGen para a pasta Applications
+            4. Abra o aplicativo pela primeira vez
+            5. Se aparecer aviso de segurança:
+               - Vá em **Preferências do Sistema > Segurança e Privacidade**
+               - Clique em **Abrir Mesmo Assim**
+            
+            ---
+            
+            ### ✨ Funcionalidades
+            
+            - ✅ Sistema de licenciamento inteligente
+            - ✅ Lançamento rápido de pedidos
+            - ✅ Gestão completa de produtos
+            - ✅ Relatórios e analytics detalhados
+            - ✅ Fluxo de caixa integrado
+            - ✅ Suporte para iFood e delivery
+            - ✅ Banco de dados SQLite offline
+            - ✅ Geração de PDFs
+            - ✅ Upload de imagens de produtos
+            
+            ---
+            
+            ### 🔐 Credenciais de Teste
+            
+            Para testar o sistema:
+            - **Usuário**: `admin`
+            - **Senha**: `admin123`
+            - **Chave de Licença**: `1A56-0FD1-4814-E762`
+            
+            ---
+            
+            ### 🔗 Links
+            
+            - 🌐 **Site**: https://sushigen.web.app
+            - 💬 **Suporte WhatsApp**: https://wa.me/5599984532007
+            - 📧 **Email**: dimme.spa@gmail.com
+            - 🐙 **GitHub**: https://github.com/dimmesheldon/sushigen
+            
+            ---
+            
+            ### 🐛 Reportar Problemas
+            
+            Encontrou um bug? [Abra uma issue](https://github.com/dimmesheldon/sushigen/issues)
+            
+            ---
+            
+            **Obrigado por usar o SushiGen!** 🍣
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
