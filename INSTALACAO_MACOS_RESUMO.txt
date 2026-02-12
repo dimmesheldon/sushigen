@@ -1,0 +1,15 @@
+# 🍎 Instalação rápida no macOS
+
+O macOS bloqueará o app por não ter certificado Apple Developer. **Isso é normal!**
+
+## Solução Rápida:
+
+1. Abra o DMG baixado
+2. Arraste o SushiGen para Applications
+3. **Clique com botão direito** no app
+4. Selecione **"Abrir"**
+5. Clique **"Abrir"** novamente na confirmação
+
+✅ Pronto! O app está autorizado.
+
+**Guia completo:** `INSTALACAO_MACOS.md`
