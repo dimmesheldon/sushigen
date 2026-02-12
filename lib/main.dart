@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/database/database_helper.dart';
+import 'core/services/admin_sync_service.dart';
 import 'core/update/widgets/update_checker.dart';
 import 'features/admin/data/repositories/admin_repository.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
@@ -41,6 +42,15 @@ void main() async {
     final adminRepository = AdminRepository();
     await adminRepository.ensureAdminAccount();
     await adminRepository.cleanupAdminData();
+
+    // Sincronizar dados admin do Firestore (baixar dados mais recentes)
+    try {
+      final adminSync = AdminSyncService();
+      await adminSync.downloadAll();
+      print('✅ Dados admin sincronizados do cloud');
+    } catch (e) {
+      print('⚠️ Sync admin falhou (offline?): $e');
+    }
   } catch (e) {
     print('⚠️ Erro ao reparar banco administrativo: $e');
   }

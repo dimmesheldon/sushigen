@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/admin_sync_service.dart';
 import '../../data/repositories/admin_repository.dart';
 import 'admin_dashboard_screen.dart';
 
@@ -40,6 +41,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
       if (!authenticated) {
         throw Exception('Usuário ou senha inválidos');
+      }
+
+      // Sincronizar dados admin do cloud após login bem-sucedido
+      try {
+        await AdminSyncService().fullSync();
+      } catch (_) {
+        // Ignora erro de sync (pode estar offline)
       }
 
       if (mounted) {
@@ -95,7 +103,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     // Título
                     Text(
                       'Painel Administrativo',
-                      style: Theme.of(context).textTheme.headlineSmall
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
                           ?.copyWith(fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),

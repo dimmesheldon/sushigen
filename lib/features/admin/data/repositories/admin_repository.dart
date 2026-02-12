@@ -2,12 +2,14 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'package:uuid/uuid.dart';
 import '../../../../core/database/database_helper.dart';
+import '../../../../core/services/admin_sync_service.dart';
 import '../../domain/entities/customer.dart';
 import '../../domain/entities/sold_license.dart';
 import '../../domain/entities/company_user.dart';
 
 class AdminRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
+  final AdminSyncService _adminSync = AdminSyncService();
   final Uuid _uuid = const Uuid();
 
   static const String _superAdminUsername = 'superadmin';
@@ -242,6 +244,7 @@ class AdminRepository {
       'customers',
       customer.copyWith(email: normalizedEmail).toMap(),
     );
+    _syncInBackground();
     return customer.id;
   }
 
@@ -253,11 +256,13 @@ class AdminRepository {
       where: 'id = ?',
       whereArgs: [customer.id],
     );
+    _syncInBackground();
   }
 
   Future<void> deleteCustomer(String id) async {
     final db = await _dbHelper.adminDatabase;
     await db.delete('customers', where: 'id = ?', whereArgs: [id]);
+    _syncInBackground();
   }
 
   // ==================== LICENÇAS ====================
@@ -336,6 +341,28 @@ class AdminRepository {
     return hash.toString();
   }
 
+  /// Sincroniza banco admin em background (não bloqueia a UI)
+  void _syncInBackground() {
+    Future.microtask(() async {
+      try {
+        await _adminSync.syncAll();
+        print('✅ [AdminRepo] Sync automático concluído');
+      } catch (e) {
+        print('⚠️ [AdminRepo] Sync automático falhou (offline?): $e');
+      }
+    });
+  }
+
+  /// Download completo dos dados admin do Firestore
+  Future<void> downloadFromCloud() async {
+    await _adminSync.downloadAll();
+  }
+
+  /// Sincronização bidirecional completa
+  Future<void> fullCloudSync() async {
+    await _adminSync.fullSync();
+  }
+
   // ==================== COMPANY USERS (MULTI-TENANT) ====================
 
   Future<List<CompanyUser>> getCompanyUsersByCustomerId(
@@ -390,6 +417,7 @@ class AdminRepository {
     final newUser = user.copyWith(id: userId, passwordHash: passwordHash);
 
     await db.insert('company_users', newUser.toMap());
+    _syncInBackground();
     return userId;
   }
 
@@ -401,6 +429,7 @@ class AdminRepository {
       where: 'id = ?',
       whereArgs: [user.id],
     );
+    _syncInBackground();
   }
 
   Future<void> updateCompanyUserPassword(
@@ -419,11 +448,13 @@ class AdminRepository {
       where: 'id = ?',
       whereArgs: [userId],
     );
+    _syncInBackground();
   }
 
   Future<void> deleteCompanyUser(String userId) async {
     final db = await _dbHelper.adminDatabase;
     await db.delete('company_users', where: 'id = ?', whereArgs: [userId]);
+    _syncInBackground();
   }
 
   Future<bool> validateCompanyUserCredentials({
@@ -490,6 +521,7 @@ class AdminRepository {
 
     await db.insert('sold_licenses', license.toMap());
 
+    _syncInBackground();
     return license;
   }
 
@@ -542,6 +574,7 @@ class AdminRepository {
         notes: 'Renovação de $additionalDays dias',
       );
     }
+    _syncInBackground();
   }
 
   Future<void> revokeLicense(String licenseId, String reason) async {
@@ -569,6 +602,7 @@ class AdminRepository {
         whereArgs: [license.licenseKey],
       );
     }
+    _syncInBackground();
   }
 
   // ==================== PAGAMENTOS ====================
@@ -595,6 +629,7 @@ class AdminRepository {
       'notes': notes,
       'created_at': now.toIso8601String(),
     });
+    _syncInBackground();
   }
 
   Future<List<Map<String, dynamic>>> getPaymentsByCustomer(
@@ -636,9 +671,8 @@ class AdminRepository {
     final expiredLicensesCount = expiredLicensesResult.first['count'] as int;
 
     // Licenças a vencer (próximos 7 dias)
-    final futureDate = DateTime.now()
-        .add(const Duration(days: 7))
-        .toIso8601String();
+    final futureDate =
+        DateTime.now().add(const Duration(days: 7)).toIso8601String();
     final expiringLicensesResult = await db.rawQuery(
       'SELECT COUNT(*) as count FROM sold_licenses WHERE status = ? AND expiration_date BETWEEN ? AND ?',
       ['active', now, futureDate],
@@ -649,8 +683,8 @@ class AdminRepository {
     final totalRevenueResult = await db.rawQuery(
       'SELECT COALESCE(SUM(amount), 0) as total FROM payments',
     );
-    final totalRevenue = ((totalRevenueResult.first['total'] ?? 0) as num)
-        .toDouble();
+    final totalRevenue =
+        ((totalRevenueResult.first['total'] ?? 0) as num).toDouble();
 
     // Faturamento do mês atual
     final firstDayOfMonth = DateTime(
@@ -662,8 +696,8 @@ class AdminRepository {
       'SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE payment_date >= ?',
       [firstDayOfMonth.toIso8601String()],
     );
-    final monthlyRevenue = ((monthlyRevenueResult.first['total'] ?? 0) as num)
-        .toDouble();
+    final monthlyRevenue =
+        ((monthlyRevenueResult.first['total'] ?? 0) as num).toDouble();
 
     return {
       'total_customers': customersCount,
@@ -721,5 +755,6 @@ class AdminRepository {
         whereArgs: ['admin'],
       );
     }
+    _syncInBackground();
   }
 }

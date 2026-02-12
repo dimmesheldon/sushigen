@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/services/admin_sync_service.dart';
 import '../../domain/entities/customer.dart';
 import '../providers/admin_provider.dart';
 import 'customers_screen.dart';
@@ -22,6 +23,41 @@ class AdminDashboardScreen extends ConsumerWidget {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.cloud_sync),
+            onPressed: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🔄 Sincronizando dados com o cloud...'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              try {
+                await AdminSyncService().fullSync();
+                ref.invalidate(adminStatisticsProvider);
+                await ref.read(customersProvider.notifier).loadCustomers();
+                await ref.read(licensesProvider.notifier).loadLicenses();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✅ Sincronização concluída!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('❌ Erro na sincronização: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            tooltip: 'Sincronizar com Cloud',
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
@@ -65,8 +101,8 @@ class AdminDashboardScreen extends ConsumerWidget {
               Text(
                 'Dashboard Administrativo',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -211,9 +247,9 @@ class AdminDashboardScreen extends ConsumerWidget {
               child: Text(
                 value,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
               ),
             ),
           ],
@@ -241,9 +277,9 @@ class AdminDashboardScreen extends ConsumerWidget {
                 Text(
                   'Licenças a Vencer (próximos 7 dias)',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange[900],
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange[900],
+                      ),
                 ),
               ],
             ),
@@ -376,8 +412,8 @@ class AdminDashboardScreen extends ConsumerWidget {
                 child: Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
               ),
               Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
