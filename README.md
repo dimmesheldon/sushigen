@@ -154,7 +154,7 @@ dart run scripts/setup_database.dart
 Este script irá:
 - ✅ Criar o banco de dados SQLite
 - ✅ Gerar uma chave de licença anual
-- ✅ Criar usuário administrador (admin/admin123)
+- ✅ Criar usuário administrador (admin/admin#7435)
 - ✅ Adicionar 20 produtos de exemplo
 - ✅ Exibir as credenciais de acesso
 

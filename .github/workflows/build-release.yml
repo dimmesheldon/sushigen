@@ -32,13 +32,13 @@ jobs:
       - name: Create ZIP
         run: |
           cd build/windows/x64/runner/Release
-          Compress-Archive -Path * -DestinationPath ../../../../../sushigen-v${{ github.ref_name }}-windows.zip
+          Compress-Archive -Path * -DestinationPath ../../../../../sushigen-${{ github.ref_name }}-windows.zip
       
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: sushigen-v${{ github.ref_name }}-windows.zip
+          path: sushigen-${{ github.ref_name }}-windows.zip
   
   build-macos:
     name: Build macOS
@@ -100,7 +100,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            sushigen-v${{ github.ref_name }}-windows.zip
+            sushigen-${{ github.ref_name }}-windows.zip
             SushiGen_*.dmg
           body: |
             ## 🍣 SushiGen ${{ github.ref_name }}

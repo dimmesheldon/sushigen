@@ -11,7 +11,7 @@ class AdminRepository {
   final Uuid _uuid = const Uuid();
 
   static const String _superAdminUsername = 'superadmin';
-  static const String _defaultAdminPassword = 'admin123';
+  static const String _defaultAdminPassword = 'admin#7435';
 
   Future<void> _ensureSuperAdminExists() async {
     final db = await _dbHelper.adminDatabase;

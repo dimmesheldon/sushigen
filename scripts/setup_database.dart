@@ -79,7 +79,7 @@ void main() async {
       print('👤 Criando usuário administrador...');
       final user = await authRepo.createUser(
         username: 'admin',
-        password: 'admin123',
+        password: 'admin#7435',
         email: 'admin@sushigen.com',
         role: 'admin',
       );
@@ -115,7 +115,7 @@ void main() async {
     print('');
     print('📋 CREDENCIAIS DE ACESSO:');
     print('   Usuário: admin');
-    print('   Senha: admin123');
+    print('   Senha: admin#7435');
     print('   Chave de Licença: $licenseKey');
     print('');
     print('🚀 Agora você pode executar o aplicativo:');

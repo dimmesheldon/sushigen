@@ -140,7 +140,7 @@ void main() async {
 
   // 3. Criar usuário superadmin
   final adminId = uuid.v4();
-  final password = 'admin123';
+  final password = 'admin#7435';
   final passwordHash = sha256.convert(utf8.encode(password)).toString();
 
   await db.insert('company_users', {
@@ -165,7 +165,7 @@ void main() async {
   print('');
   print('🔑 CREDENCIAIS:');
   print('   Usuário: superadmin');
-  print('   Senha: admin123');
+  print('   Senha: admin#7435');
   print('   Chave de Licença: $licenseKey');
   print('');
   print('📋 Customer ID: $customerId');

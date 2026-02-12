@@ -80,7 +80,7 @@ void main() async {
 
   // Criar usuário admin
   final username = 'admin';
-  final password = 'admin123';
+  final password = 'admin#7435';
   final passwordHash = _hashPassword(password);
   final licenseKey = '1A56-0FD1-4814-E762';
   final now = DateTime.now();

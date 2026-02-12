@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../data/repositories/admin_repository.dart';
 import 'admin_dashboard_screen.dart';
 
@@ -55,104 +53,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         _isLoading = false;
       });
     }
-  }
-
-  String? _encodeQueryParameters(Map<String, String> params) {
-    return params.entries
-        .map(
-          (e) =>
-              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
-        )
-        .join('&');
-  }
-
-  Future<void> _showRecoveryEmail() async {
-    const recoveryEmail = 'dimme.spa@gmail.com';
-    const defaultPass = 'admin123';
-
-    await showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Recuperação de Credenciais'),
-          content: const Text(
-            'Ao confirmar, a senha do Super Admin será redefinida para o padrão e um e-mail será preparado para você.\n\n'
-            'Destino: $recoveryEmail',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                try {
-                  setState(() => _isLoading = true);
-
-                  // 1. Resetar senha no banco
-                  await _adminRepository.resetAdminPassword(
-                    newPassword: defaultPass,
-                  );
-
-                  // 2. Preparar envio de e-mail
-                  final Uri emailLaunchUri = Uri(
-                    scheme: 'mailto',
-                    path: recoveryEmail,
-                    query: _encodeQueryParameters(<String, String>{
-                      'subject': 'Recuperação de Credenciais - SushiGen',
-                      'body':
-                          'Olá Dimme,\n\n'
-                          'Aqui estão as credenciais atuais do Super Admin:\n\n'
-                          'Usuário: superadmin\n'
-                          'Senha: $defaultPass\n\n'
-                          'Este reset foi solicitado através do sistema no computador.',
-                    }),
-                  );
-
-                  if (await canLaunchUrl(emailLaunchUri)) {
-                    await launchUrl(emailLaunchUri);
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Senha redefinida e e-mail aberto.'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  } else {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Senha resetada para "admin123", mas não foi possível abrir o e-mail.',
-                          ),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                    }
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Erro: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                } finally {
-                  if (mounted) {
-                    setState(() => _isLoading = false);
-                  }
-                }
-              },
-              child: const Text('Enviar Credenciais'),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -252,11 +152,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             ),
                     ),
                     const SizedBox(height: 16),
-
-                    TextButton(
-                      onPressed: _showRecoveryEmail,
-                      child: const Text('Recuperar senha por e-mail'),
-                    ),
 
                     // Botão Voltar
                     TextButton(

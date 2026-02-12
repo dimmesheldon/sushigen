@@ -35,7 +35,7 @@ void main() async {
 
   // Criar usuário admin
   final username = 'admin';
-  final password = 'admin123';
+  final password = 'admin#7435';
   final passwordHash = _hashPassword(password);
 
   // Criar licença válida por 1 ano

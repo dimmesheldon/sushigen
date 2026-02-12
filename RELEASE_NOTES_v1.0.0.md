@@ -85,7 +85,7 @@
 Para testar o sistema, use:
 
 - **Usuário**: `admin`
-- **Senha**: `admin123`
+- **Senha**: `admin#7435`
 - **Chave de Licença**: `1A56-0FD1-4814-E762`
 
 ⚠️ **Importante**: Essas são credenciais de demonstração. Para uso em produção, gere suas próprias licenças.

@@ -83,7 +83,7 @@ void main() async {
   // Criar usuário
   final user = await authRepo.createUser(
     username: 'admin',
-    password: 'admin123',
+    password: 'admin#7435',
     email: 'admin@sushigen.com',
     role: 'admin',
   );
@@ -109,7 +109,7 @@ Após executar o `setup_database.dart`:
 
 ```
 Usuário: admin
-Senha: admin123
+Senha: admin#7435
 Chave de Licença: [exibida no terminal após o setup]
 ```
 

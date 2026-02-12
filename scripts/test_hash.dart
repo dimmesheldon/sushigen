@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 
 void main() {
-  final password = 'admin123';
+  final password = 'admin#7435';
   final bytes = utf8.encode(password);
   final digest = sha256.convert(bytes);
   final hash = digest.toString();

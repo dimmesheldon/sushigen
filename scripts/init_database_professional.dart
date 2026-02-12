@@ -136,7 +136,7 @@ void main() async {
 
   // Criar usuário admin
   final username = 'admin';
-  final password = 'admin123';
+  final password = 'admin#7435';
   final passwordHash = _hashPassword(password);
   final licenseKey = '1A56-0FD1-4814-E762';
   final now = DateTime.now();
@@ -192,7 +192,7 @@ void main() async {
   print('   1. FECHE COMPLETAMENTE o app SushiGen (Cmd+Q)');
   print('   2. Abra o app novamente');
   print('   3. Clique em "Área Administrativa"');
-  print('   4. Login: superadmin / admin123');
+  print('   4. Login: superadmin / admin#7435');
   print('   5. Acesse Configurações (⚙️) para trocar a senha');
   print('');
   print('✨ Sistema pronto para uso profissional!');
