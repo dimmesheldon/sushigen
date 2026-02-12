@@ -134,19 +134,27 @@ class AdminSyncService {
           .collection('items')
           .get();
 
+      int newCount = 0;
+      int updatedCount = 0;
+
       for (var doc in snapshot.docs) {
         final data = Map<String, dynamic>.from(doc.data());
         _convertTimestampsToStrings(data);
 
+        // Garantir que o id do Firestore seja usado
+        final customerId = data['id'] ?? doc.id;
+        data['id'] = customerId;
+
         final existing = await db.query(
           'customers',
           where: 'id = ?',
-          whereArgs: [doc.id],
+          whereArgs: [customerId],
           limit: 1,
         );
 
         if (existing.isEmpty) {
           await db.insert('customers', data);
+          newCount++;
         } else {
           final serverUpdated = data['updated_at'] as String?;
           final localUpdated = existing.first['updated_at'] as String?;
@@ -156,13 +164,14 @@ class AdminSyncService {
               'customers',
               data,
               where: 'id = ?',
-              whereArgs: [doc.id],
+              whereArgs: [customerId],
             );
+            updatedCount++;
           }
         }
       }
 
-      print('✅ [AdminSync] Customers baixados: ${snapshot.docs.length}');
+      print('✅ [AdminSync] Customers baixados: $newCount novos, $updatedCount atualizados');
     } catch (e) {
       print('❌ [AdminSync] Erro ao baixar customers: $e');
       rethrow;
@@ -211,35 +220,43 @@ class AdminSyncService {
           .collection('items')
           .get();
 
+      int newCount = 0;
+      int updatedCount = 0;
+
       for (var doc in snapshot.docs) {
         final data = Map<String, dynamic>.from(doc.data());
         _convertTimestampsToStrings(data);
 
-        final existing = await db.query(
+        // Verificar se existe por username (UNIQUE constraint)
+        final existingByUsername = await db.query(
           'company_users',
-          where: 'id = ?',
-          whereArgs: [doc.id],
+          where: 'username = ?',
+          whereArgs: [data['username']],
           limit: 1,
         );
 
-        if (existing.isEmpty) {
+        if (existingByUsername.isEmpty) {
+          // Inserir novo usuário
           await db.insert('company_users', data);
+          newCount++;
         } else {
+          // Atualizar se a versão do servidor for mais recente
           final serverUpdated = data['updated_at'] as String?;
-          final localUpdated = existing.first['updated_at'] as String?;
+          final localUpdated = existingByUsername.first['updated_at'] as String?;
 
           if (_isNewer(serverUpdated, localUpdated)) {
             await db.update(
               'company_users',
               data,
-              where: 'id = ?',
-              whereArgs: [doc.id],
+              where: 'username = ?',
+              whereArgs: [data['username']],
             );
+            updatedCount++;
           }
         }
       }
 
-      print('✅ [AdminSync] Company users baixados: ${snapshot.docs.length}');
+      print('✅ [AdminSync] Company users baixados: $newCount novos, $updatedCount atualizados');
     } catch (e) {
       print('❌ [AdminSync] Erro ao baixar company_users: $e');
       rethrow;
@@ -288,19 +305,27 @@ class AdminSyncService {
           .collection('items')
           .get();
 
+      int newCount = 0;
+      int updatedCount = 0;
+
       for (var doc in snapshot.docs) {
         final data = Map<String, dynamic>.from(doc.data());
         _convertTimestampsToStrings(data);
 
+        // Garantir que o id do Firestore seja usado
+        final licenseId = data['id'] ?? doc.id;
+        data['id'] = licenseId;
+
         final existing = await db.query(
           'sold_licenses',
           where: 'id = ?',
-          whereArgs: [doc.id],
+          whereArgs: [licenseId],
           limit: 1,
         );
 
         if (existing.isEmpty) {
           await db.insert('sold_licenses', data);
+          newCount++;
         } else {
           final serverUpdated = data['updated_at'] as String?;
           final localUpdated = existing.first['updated_at'] as String?;
@@ -310,13 +335,14 @@ class AdminSyncService {
               'sold_licenses',
               data,
               where: 'id = ?',
-              whereArgs: [doc.id],
+              whereArgs: [licenseId],
             );
+            updatedCount++;
           }
         }
       }
 
-      print('✅ [AdminSync] Licenças baixadas: ${snapshot.docs.length}');
+      print('✅ [AdminSync] Licenças baixadas: $newCount novas, $updatedCount atualizadas');
     } catch (e) {
       print('❌ [AdminSync] Erro ao baixar licenças: $e');
       rethrow;
