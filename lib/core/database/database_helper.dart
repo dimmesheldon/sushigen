@@ -80,15 +80,14 @@ class DatabaseHelper {
       print('✅ Backup criado: $backupPath');
 
       // Manter apenas os 5 backups mais recentes
-      final backups =
-          backupDir
-              .listSync()
-              .whereType<File>()
-              .where((file) => file.path.endsWith('.db'))
-              .toList()
-            ..sort(
-              (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
-            );
+      final backups = backupDir
+          .listSync()
+          .whereType<File>()
+          .where((file) => file.path.endsWith('.db'))
+          .toList()
+        ..sort(
+          (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
+        );
 
       for (final oldBackup in backups.skip(5)) {
         oldBackup.deleteSync();

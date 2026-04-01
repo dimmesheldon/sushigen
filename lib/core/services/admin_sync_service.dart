@@ -171,7 +171,8 @@ class AdminSyncService {
         }
       }
 
-      print('✅ [AdminSync] Customers baixados: $newCount novos, $updatedCount atualizados');
+      print(
+          '✅ [AdminSync] Customers baixados: $newCount novos, $updatedCount atualizados');
     } catch (e) {
       print('❌ [AdminSync] Erro ao baixar customers: $e');
       rethrow;
@@ -242,7 +243,8 @@ class AdminSyncService {
         } else {
           // Atualizar se a versão do servidor for mais recente
           final serverUpdated = data['updated_at'] as String?;
-          final localUpdated = existingByUsername.first['updated_at'] as String?;
+          final localUpdated =
+              existingByUsername.first['updated_at'] as String?;
 
           if (_isNewer(serverUpdated, localUpdated)) {
             await db.update(
@@ -256,7 +258,8 @@ class AdminSyncService {
         }
       }
 
-      print('✅ [AdminSync] Company users baixados: $newCount novos, $updatedCount atualizados');
+      print(
+          '✅ [AdminSync] Company users baixados: $newCount novos, $updatedCount atualizados');
     } catch (e) {
       print('❌ [AdminSync] Erro ao baixar company_users: $e');
       rethrow;
@@ -342,7 +345,8 @@ class AdminSyncService {
         }
       }
 
-      print('✅ [AdminSync] Licenças baixadas: $newCount novas, $updatedCount atualizadas');
+      print(
+          '✅ [AdminSync] Licenças baixadas: $newCount novas, $updatedCount atualizadas');
     } catch (e) {
       print('❌ [AdminSync] Erro ao baixar licenças: $e');
       rethrow;
